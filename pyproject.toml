@@ -1,0 +1,36 @@
+[project]
+name = "anlp-ws202526"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "accelerate>=1.7.0",
+    "anthropic>=0.55.0",
+    "datasets>=3.6.0",
+    "gensim>=4.3.3",
+    "matplotlib>=3.10.1",
+    "openai-agents>=0.1.0",
+    "pandas>=2.2.3",
+    "pip>=25.1",
+    "polars>=1.26.0",
+    "python-dotenv>=1.1.0",
+    "scikit-learn>=1.6.1",
+    "spacy>=3.8.4",
+    "torch>=2.7.0",
+    "transformers>=4.53.0",
+]
+
+
+[dependency-groups]
+dev = ["black>=25.1.0", "jupyter>=1.1.1", "ruff>=0.12.1", "marimo>=0.14.9"]
+
+
+[tool.ruff]
+line-length = 120
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.mccabe]
+# Unlike Flake8, default to a complexity level of 10.
+max-complexity = 10
