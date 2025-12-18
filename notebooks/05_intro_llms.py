@@ -1,7 +1,7 @@
 import marimo
 
 __generated_with = "0.18.0"
-app = marimo.App(width="medium")
+app = marimo.App(width="full")
 
 
 @app.cell
@@ -29,19 +29,7 @@ def _():
     return API_BASE, API_KEY, os
 
 
-@app.cell
-def _(mo):
-    # Default example sentence - a complex sentence that needs simplification
-    default_text = "Nevertheless, Tagore emulated numerous styles, including craftwork from northern New Ireland, Haida carvings from the west coast of Canada (British Columbia), and woodcuts by Max Pechstein."
-
-    text_input = mo.ui.text_area(
-        value=default_text, label="Text to Simplify", full_width=True, rows=4
-    )
-    text_input
-    return (text_input,)
-
-
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     # Temperature: Controls randomness (0.0 = deterministic, 2.0 = very random)
     temperature_slider = mo.ui.slider(
@@ -65,7 +53,12 @@ def _(mo):
 
     # Max Tokens: Maximum length of generated response
     max_tokens_slider = mo.ui.slider(
-        start=50, stop=500, step=50, value=200, label="Max Tokens", show_value=True
+        start=128,
+        stop=1024,
+        step=128,
+        value=512,
+        label="Max Tokens",
+        show_value=True,
     )
 
     # Frequency Penalty: Reduces repetition (-2.0 to 2.0)
@@ -106,314 +99,24 @@ def _(mo):
     )
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
-    mo.md("""
-    ## API Configuration
+    # Default example sentence - a complex sentence that needs simplification
+    default_text = "Nevertheless, Tagore emulated numerous styles, including craftwork from northern New Ireland, Haida carvings from the west coast of Canada (British Columbia), and woodcuts by Max Pechstein."
 
-    Configure the LLM API connection:
-    """)
-    return
-
-
-@app.cell
-def _(API_BASE, API_KEY, mo):
-    import requests
-
-
-    # IMPORTANT: Only works from inside campus environment or via VPN
-    # Fetch available models
-    def get_models():
-        headers = {"Authorization": f"Bearer {API_KEY}"}
-        response = requests.get(f"{API_BASE}/models", headers=headers)
-        models_data = response.json()
-        # Extract model IDs from the response
-        return [model["id"] for model in models_data.get("data", [])]
-
-
-    available_models = get_models()
-
-    # Create dropdown for model selection
-    model_dropdown = mo.ui.dropdown(
-        options=available_models,
-        value=available_models[0] if available_models else None,
-        label="Select Model",
+    text_input = mo.ui.text_area(
+        value=default_text, label="Text to Simplify", full_width=True, rows=4
     )
-
-    model_dropdown
-    return model_dropdown, requests
-
-
-@app.cell
-def _(mo):
-    mo.md("""
-    ## Text Simplification with API
-
-    Using the campus API to simplify text:
-    """)
-    return
-
-
-@app.cell
-def _(
-    API_BASE,
-    API_KEY,
-    frequency_penalty_slider,
-    max_tokens_slider,
-    model_dropdown,
-    presence_penalty_slider,
-    requests,
-    temperature_slider,
-    text_input,
-    top_p_slider,
-):
-    def simplify_text(
-        text,
-        model,
-        temperature,
-        top_p,
-        max_tokens,
-        frequency_penalty,
-        presence_penalty,
-    ):
-        """Simplify text using the selected model with specified parameters"""
-        url = f"{API_BASE}/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {API_KEY}",
-            "Content-Type": "application/json",
-        }
-
-        system_message = """You are a text simplification assistant. Your task is to simplify complex sentences while preserving their meaning.
-
-    Simplification guidelines:
-    - Use shorter, simpler words
-    - Break down complex sentences into shorter ones
-    - Remove unnecessary jargon
-    - Keep the core meaning intact
-    - Make it easier to read and understand"""
-
-        data = {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": system_message},
-                {
-                    "role": "user",
-                    "content": f"Simplify the following text:\n\n{text}",
-                },
-            ],
-            "temperature": temperature,
-            "top_p": top_p,
-            "max_tokens": max_tokens,
-            "frequency_penalty": frequency_penalty,
-            "presence_penalty": presence_penalty,
-        }
-        response = requests.post(url, headers=headers, json=data)
-        return response.json()
-
-
-    # Use selected model and parameters from UI
-    if model_dropdown.value and text_input.value:
-        api_result = simplify_text(
-            text=text_input.value,
-            model=model_dropdown.value,
-            temperature=temperature_slider.value,
-            top_p=top_p_slider.value,
-            max_tokens=max_tokens_slider.value,
-            frequency_penalty=frequency_penalty_slider.value,
-            presence_penalty=presence_penalty_slider.value,
-        )
-
-        # Extract the simplified text from the response
-        simplified_text = (
-            api_result.get("choices", [{}])[0]
-            .get("message", {})
-            .get("content", "")
-        )
-    return (simplified_text,)
-
-
-@app.cell
-def _(mo, simplified_text, text_input):
-    mo.md(f"""
-    ### Original Text
-
-    {text_input.value}
-
-    ---
-
-    ### Simplified Text
-
-    {simplified_text}
-    """)
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md("""
-    ## Text Simplification with LiteLLM
-
-    Using LiteLLM for more flexible model access:
-    """)
-    return
-
-
-@app.cell
-def _(
-    API_BASE,
-    API_KEY,
-    frequency_penalty_slider,
-    max_tokens_slider,
-    model_dropdown,
-    presence_penalty_slider,
-    temperature_slider,
-    text_input,
-    top_p_slider,
-):
-    from litellm import completion
-
-    # Use the selected model from dropdown with parameters
-    if model_dropdown.value and text_input.value:
-        litellm_response = completion(
-            model=f"openai/{model_dropdown.value}",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a text simplification assistant. Simplify the following text while preserving its meaning.",
-                },
-                {"role": "user", "content": f"Simplify: {text_input.value}"},
-            ],
-            api_base=API_BASE,
-            api_key=API_KEY,
-            temperature=temperature_slider.value,
-            top_p=top_p_slider.value,
-            max_tokens=max_tokens_slider.value,
-            frequency_penalty=frequency_penalty_slider.value,
-            presence_penalty=presence_penalty_slider.value,
-        )
-
-        litellm_simplified = litellm_response.choices[0].message.content
-    return completion, litellm_simplified
-
-
-@app.cell
-def _(litellm_simplified, mo, text_input):
-    mo.md(f"""
-    ### Original Text
-
-    {text_input.value}
-
-    ---
-
-    ### Simplified Text (LiteLLM)
-
-    {litellm_simplified}
-    """)
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md("""
-    ## Structured Output with Instructor
-
-    Using Instructor to get structured simplification results with metadata:
-    """)
-    return
-
-
-@app.cell
-def _(
-    API_BASE,
-    API_KEY,
-    completion,
-    frequency_penalty_slider,
-    max_tokens_slider,
-    model_dropdown,
-    presence_penalty_slider,
-    temperature_slider,
-    text_input,
-    top_p_slider,
-):
-    import instructor
-    from pydantic import BaseModel, Field
-
-    client = instructor.from_litellm(completion)
-
-
-    class SimplificationResult(BaseModel):
-        """Structured result for text simplification"""
-
-        simplified_text: str = Field(
-            description="The simplified version of the input text"
-        )
-
-
-    def simplify_with_structure(
-        text: str,
-        model: str,
-        temperature: float,
-        top_p: float,
-        max_tokens: int,
-        frequency_penalty: float,
-        presence_penalty: float,
-    ):
-        """Simplify text and return structured result with metadata"""
-        return client.chat.completions.create(
-            model=f"openai/{model}",
-            api_base=API_BASE,
-            api_key=API_KEY,
-            response_model=SimplificationResult,
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a text simplification assistant. ",
-                },
-                {"role": "user", "content": f"Simplify this text:\n\n{text}"},
-            ],
-            temperature=temperature,
-            top_p=top_p,
-            max_tokens=max_tokens,
-            frequency_penalty=frequency_penalty,
-            presence_penalty=presence_penalty,
-            max_retries=3,
-        )
-
-
-    # Use selected model from dropdown
-    if model_dropdown.value and text_input.value:
-        structured_result = simplify_with_structure(
-            text=text_input.value,
-            model=model_dropdown.value,
-            temperature=temperature_slider.value,
-            top_p=top_p_slider.value,
-            max_tokens=max_tokens_slider.value,
-            frequency_penalty=frequency_penalty_slider.value,
-            presence_penalty=presence_penalty_slider.value,
-        )
-    return (structured_result,)
-
-
-@app.cell
-def _(mo, structured_result, text_input):
-    mo.md(f"""
-    ### Original Text
-
-    {text_input.value}
-
-    ---
-
-    ### Simplified Text (Structured)
-
-    {structured_result.simplified_text}
-    """)
-    return
+    text_input
+    return (text_input,)
 
 
 @app.cell
 def _(mo):
     mo.md(r"""
     ## Using Gemini via Vertex AI
+
+    First, we test the Gemini models directly. We use the package [LiteLLM](https://docs.litellm.ai/) that gives us universal access to most of the LLM providers. Also, we use the Gemini API via Vertex AI to make use of our Educational Credits. There is also the Google GenAI platform, but this uses a different budget.
     """)
     return
 
@@ -458,7 +161,7 @@ def _(
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a text simplification assistant. Simplify the following text while preserving its meaning.",
+                    "content": "You are a text simplification assistant. Simplify the following text while preserving its meaning. Do not say anything else.",
                 },
                 {"role": "user", "content": f"Simplify: {text_input.value}"},
             ],
@@ -491,30 +194,22 @@ def _(gemini_simplified, mo, text_input):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    https://docs.cloud.google.com/vertex-ai/generative-ai/docs/multimodal/batch-prediction-gemini
-    https://docs.cloud.google.com/vertex-ai/generative-ai/docs/multimodal/batch-prediction-from-cloud-storage#create-batch-job-python_genai_sdk
-    """)
-    return
+    ## Batch Prediction
 
+    Next, we can process many sentences at once by utilizing the batch prediction feature. As an example, we simplify the first 20 sentences in the ASSET test set. Batch processing offers 50% cost savings compared to real-time inference.
 
-@app.cell
-def _(mo):
-    mo.md("""
-    ## Batch Processing
-
-    Process multiple sentences efficiently using batch prediction with Gemini.
-    Batch processing offers 50% cost savings compared to real-time inference.
 
     **Prerequisites:**
-    1. Ensure you have a Google Cloud Storage bucket created (e.g., `anlp-ws202526-batch`)
-    2. The service account needs these permissions:
-       - `storage.objects.create` (to upload input files)
-       - `storage.objects.get` (to read output files)
-       - `aiplatform.batchPredictionJobs.create` (to create batch jobs)
-    3. Update the `bucket_name` variable below if using a different bucket
+    1. Create a service account on your Google Cloud Platform.
+    2. The service account needs these roles:
+       - Vertex AI Batch Prediction Service
+       - Vertex AI Platform Express User
+       - Vertex AI Tuning Service Agent
+    3. Download a key for the service account as json and add the path as `GOOGLE_APPLICATION_CREDENTIALS` to your `.env` file.
+    4. Update the `bucket_name` variable below if using a different bucket
 
     **How it works:**
     1. Load 20 sentences from the ASSET test file
@@ -526,6 +221,9 @@ def _(mo):
     **Note**
 
     I noticed in my first runs that gemini-flash-2.5 used thought tokens and somehow the `thinkingConfig` parameter is not accpected for batch jobs (there is no documentation on this, might be a bug) and I couldn't turn off thinking, so I switchted to gemini-flash-2.5-lite for now.
+
+    https://docs.cloud.google.com/vertex-ai/generative-ai/docs/multimodal/batch-prediction-gemini
+    https://docs.cloud.google.com/vertex-ai/generative-ai/docs/multimodal/batch-prediction-from-cloud-storage#create-batch-job-python_genai_sdk
     """)
     return
 
@@ -566,7 +264,15 @@ def _():
 
 
 @app.cell
-def _(json, sentences):
+def _(
+    frequency_penalty_slider,
+    json,
+    max_tokens_slider,
+    presence_penalty_slider,
+    sentences,
+    temperature_slider,
+    top_p_slider,
+):
     # Create JSONL file for batch processing
     import tempfile
 
@@ -585,8 +291,12 @@ def _(json, sentences):
                     }
                 ],
                 "generationConfig": {
-                    "temperature": 0.0,
-                    "maxOutputTokens": 512,
+                    "temperature": temperature_slider.value,
+                    "topP": top_p_slider.value,
+                    "maxOutputTokens": max_tokens_slider.value,
+                    "frequencyPenalty": frequency_penalty_slider.value,
+                    "presencePenalty": presence_penalty_slider.value,
+                    "thinkingConfig": {"thinkingBudget": 0},  # Disable thinking
                 },
             }
         }
@@ -609,7 +319,7 @@ def _(json, sentences):
 @app.cell
 def _(bucket, bucket_name, jsonl_file, os):
     # Upload input file
-    input_blob_name = "batch_input/simplification_batch_input_2.jsonl"
+    input_blob_name = "batch_input/simplification_batch_input.jsonl"
     input_blob = bucket.blob(input_blob_name)
     input_blob.upload_from_filename(jsonl_file.name)
 
@@ -715,12 +425,6 @@ def _(batch_job, genai_client, mo):
 
 
 @app.cell
-def _(sentences):
-    sentences
-    return
-
-
-@app.cell
 def _(JobState, bucket, current_job, genai_client, json, mo, output_gcs_uri):
     job_status = genai_client.batches.get(name=current_job.name)
 
@@ -738,7 +442,6 @@ def _(JobState, bucket, current_job, genai_client, json, mo, output_gcs_uri):
                 for idx2, line in enumerate(content.strip().split("\n")):
                     if line:
                         result = json.loads(line)
-                        print(result)
 
                         # Check for status errors first
                         if result.get("status"):
@@ -828,6 +531,293 @@ def _(JobState, bucket, current_job, genai_client, json, mo, output_gcs_uri):
         """)
 
     md
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md("""
+    ## Using the KITeGG Cluster
+
+    Configure the LLM API connection:
+    """)
+    return
+
+
+@app.cell
+def _(API_BASE, API_KEY, mo):
+    import requests
+
+
+    # IMPORTANT: Only works from inside campus environment or via VPN
+    # Fetch available models
+    def get_models():
+        headers = {"Authorization": f"Bearer {API_KEY}"}
+        response = requests.get(f"{API_BASE}/models", headers=headers)
+        models_data = response.json()
+        # Extract model IDs from the response
+        return [model["id"] for model in models_data.get("data", [])]
+
+
+    available_models = get_models()
+
+    # Create dropdown for model selection
+    model_dropdown = mo.ui.dropdown(
+        options=available_models,
+        value=available_models[0] if available_models else None,
+        label="Select Model",
+    )
+
+    model_dropdown
+    return model_dropdown, requests
+
+
+@app.cell
+def _(
+    API_BASE,
+    API_KEY,
+    frequency_penalty_slider,
+    max_tokens_slider,
+    model_dropdown,
+    presence_penalty_slider,
+    requests,
+    temperature_slider,
+    text_input,
+    top_p_slider,
+):
+    def simplify_text(
+        text,
+        model,
+        temperature,
+        top_p,
+        max_tokens,
+        frequency_penalty,
+        presence_penalty,
+    ):
+        """Simplify text using the selected model with specified parameters"""
+        url = f"{API_BASE}/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json",
+        }
+
+        system_message = """You are a text simplification assistant. Your task is to simplify complex sentences while preserving their meaning. Dont say anything else."""
+
+        data = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system_message},
+                {
+                    "role": "user",
+                    "content": f"Simplify the following text:\n\n{text}",
+                },
+            ],
+            "temperature": temperature,
+            "top_p": top_p,
+            "max_tokens": max_tokens,
+            "frequency_penalty": frequency_penalty,
+            "presence_penalty": presence_penalty,
+        }
+        response = requests.post(url, headers=headers, json=data)
+        return response.json()
+
+
+    # Use selected model and parameters from UI
+    if model_dropdown.value and text_input.value:
+        api_result = simplify_text(
+            text=text_input.value,
+            model=model_dropdown.value,
+            temperature=temperature_slider.value,
+            top_p=top_p_slider.value,
+            max_tokens=max_tokens_slider.value,
+            frequency_penalty=frequency_penalty_slider.value,
+            presence_penalty=presence_penalty_slider.value,
+        )
+
+        # Extract the simplified text from the response
+        simplified_text = (
+            api_result.get("choices", [{}])[0]
+            .get("message", {})
+            .get("content", "")
+        )
+    return (simplified_text,)
+
+
+@app.cell
+def _(mo, simplified_text, text_input):
+    mo.md(f"""
+    ### Original Text
+
+    {text_input.value}
+
+    ---
+
+    ### Simplified Text
+
+    {simplified_text}
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md("""
+    ## Text Simplification with LiteLLM
+
+    Using LiteLLM for more flexible model access:
+    """)
+    return
+
+
+@app.cell
+def _(
+    API_BASE,
+    API_KEY,
+    frequency_penalty_slider,
+    max_tokens_slider,
+    model_dropdown,
+    presence_penalty_slider,
+    temperature_slider,
+    text_input,
+    top_p_slider,
+):
+    from litellm import completion
+
+    # Use the selected model from dropdown with parameters
+    if model_dropdown.value and text_input.value:
+        litellm_response = completion(
+            model=f"openai/{model_dropdown.value}",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a text simplification assistant. Simplify the following text while preserving its meaning. Dont say anything else.",
+                },
+                {"role": "user", "content": f"Simplify: {text_input.value}"},
+            ],
+            api_base=API_BASE,
+            api_key=API_KEY,
+            temperature=temperature_slider.value,
+            top_p=top_p_slider.value,
+            max_tokens=max_tokens_slider.value,
+            frequency_penalty=frequency_penalty_slider.value,
+            presence_penalty=presence_penalty_slider.value,
+        )
+
+        litellm_simplified = litellm_response.choices[0].message.content
+    return completion, litellm_simplified
+
+
+@app.cell
+def _(litellm_simplified, mo, text_input):
+    mo.md(f"""
+    ### Original Text
+
+    {text_input.value}
+
+    ---
+
+    ### Simplified Text (LiteLLM)
+
+    {litellm_simplified}
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md("""
+    ## Structured Output with Instructor
+
+    Using Instructor to get structured simplification results with metadata:
+    """)
+    return
+
+
+@app.cell
+def _(
+    API_BASE,
+    API_KEY,
+    completion,
+    frequency_penalty_slider,
+    max_tokens_slider,
+    model_dropdown,
+    presence_penalty_slider,
+    temperature_slider,
+    text_input,
+    top_p_slider,
+):
+    import instructor
+    from pydantic import BaseModel, Field
+
+    instructor_client = instructor.from_litellm(completion)
+
+
+    class SimplificationResult(BaseModel):
+        """Structured result for text simplification"""
+
+        simplified_text: str = Field(
+            description="The simplified version of the input text"
+        )
+
+
+    def simplify_with_structure(
+        text: str,
+        model: str,
+        temperature: float,
+        top_p: float,
+        max_tokens: int,
+        frequency_penalty: float,
+        presence_penalty: float,
+    ):
+        """Simplify text and return structured result with metadata"""
+        return instructor_client.chat.completions.create(
+            model=f"openai/{model}",
+            api_base=API_BASE,
+            api_key=API_KEY,
+            response_model=SimplificationResult,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a text simplification assistant. ",
+                },
+                {"role": "user", "content": f"Simplify this text:\n\n{text}"},
+            ],
+            temperature=temperature,
+            top_p=top_p,
+            max_tokens=max_tokens,
+            frequency_penalty=frequency_penalty,
+            presence_penalty=presence_penalty,
+            max_retries=3,
+        )
+
+
+    # Use selected model from dropdown
+    if model_dropdown.value and text_input.value:
+        structured_result = simplify_with_structure(
+            text=text_input.value,
+            model=model_dropdown.value,
+            temperature=temperature_slider.value,
+            top_p=top_p_slider.value,
+            max_tokens=max_tokens_slider.value,
+            frequency_penalty=frequency_penalty_slider.value,
+            presence_penalty=presence_penalty_slider.value,
+        )
+    return (structured_result,)
+
+
+@app.cell
+def _(mo, structured_result, text_input):
+    mo.md(f"""
+    ### Original Text
+
+    {text_input.value}
+
+    ---
+
+    ### Simplified Text (Structured)
+
+    {structured_result.simplified_text}
+    """)
     return
 
 
