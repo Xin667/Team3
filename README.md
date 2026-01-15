@@ -8,7 +8,7 @@ submissions/my_team/cefr_t5_model.jsonl – The main submission file with the si
 
 cefr_t5_model_results.xlsx – Excel file showing the evaluation metrics for the submission.
 
-hackathon_and_final_exam.html – HTML version of hackathon and final exam presentation. You can also open it directly here https://molab.marimo.io/notebooks/nb_nExdKGHyZ8vU7qnxciqBsq
+hackathon_and_final_exam.html – HTML version of hackathon and final exam presentation. You can open it directly here https://molab.marimo.io/notebooks/nb_nExdKGHyZ8vU7qnxciqBsq
 
 tsar2025_test.jsonl – The test dataset that was used to generate the simplified outputs in the submission file.
 
