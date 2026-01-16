@@ -227,7 +227,7 @@ def _(
         messages=[
             {"role": "system", "content": simplification_system_prompt},
             # Here is the user message
-            {"role": "user", "content": f"Simplify: {sentence_input.value}"},
+            {"role": "user", "content": f"Simplify:q {sentence_input.value}"},
         ],
         vertex_project="chatbot-183407",
         vertex_location="us-central1",
@@ -532,7 +532,7 @@ def _(mo):
 
 @app.cell
 def _(completion, model_selector, sentence_input, temperature_slider):
-    few_shot_system_prompt = f"""You are a text simplification expert. Your job is to rewrite complex sentences into simpler versions that are easier to understand.
+    few_shot_system_prompt = """You are a text simplification expert. Your job is to rewrite complex sentences into simpler versions that are easier to understand.
 
     Rules:
     1. Preserve all original meaning
