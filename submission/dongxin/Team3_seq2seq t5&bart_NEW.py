@@ -55,7 +55,7 @@ def _():
     from huggingface_hub import login
 
     # ================= Configuration =================
-    HF_TOKEN = "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" 
+    HF_TOKEN = "" # Do not hardcode secrets in scripts
     DATA_PATH = "data/asset/"
 
     # Output
