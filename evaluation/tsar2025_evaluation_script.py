@@ -6,8 +6,8 @@ from transformers import pipeline # IMPORTANT: Please ensure your transformers v
 import evaluate
 
 # ---------------- Config ----------------
-GOLD_FILE = "tsar2025_test.jsonl"   # gold file next to this script
-SUBMISSIONS_DIR = "submissions"     # folder with team subfolders
+GOLD_FILE = "../data/tsar2025_test.jsonl"   # gold file next to this script
+SUBMISSIONS_DIR = "../submissions"     # folder with team subfolders
 SEED = 42                           # for reproducibility
 BATCH_SIZE = 32                     # adjust for your GPU
 
@@ -24,9 +24,17 @@ except Exception:
     pass
 
 # ---------------- IO --------------------
-def read_jsonl(path: str):
-    with open(path, "r", encoding="utf-8") as f:
-        return [json.loads(line) for line in f]
+def read_jsonl(path):
+    with open(path, 'r', encoding='utf-8') as f:
+        data = []
+        for line in f:
+            line = line.strip() # Remove leading and trailing spaces and newlines
+            if line: # The line will only be parsed if it is not empty.
+                try:
+                    data.append(json.loads(line))
+                except json.JSONDecodeError:
+                    continue
+        return data
 
 def read_gold(path: str):
     data = read_jsonl(path)
